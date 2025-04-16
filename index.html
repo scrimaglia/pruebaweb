@@ -1,34 +1,296 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Embedded Content</title>
+<div id="archive-container"></div>
+<div id="pagination"></div>
+
+<script>
+let currentPage = 1;
+const rowsPerPage = 1;
+let data = [];
+
+function loadPage(page) {
+    let start = (page - 1) * rowsPerPage;
+    let end = start + rowsPerPage;
+    let paginatedItems = data.slice(start, end);
+
+    let container = document.getElementById('archive-container');
+    container.innerHTML = "";
+
+    paginatedItems.forEach(row => {
+        container.innerHTML += `<div class="card">
+            <h2 class="animate-text">${row["Nombre"]}</h2>
+            <hr class="animate-line" />
+            <div class="text-container">
+                <h3 class="animate-text">6 cuotas s/int de: $ ${row["6 cuotas sin int"]}</h3>
+                <p class="animate-text transf">Transf/Débito: $ ${row["Transf / debito"]}</p>
+                <p class="animate-text">Precio de lista: $ ${row["Precio normal"]}</p>
+                <p class="animate-text">Stock: ${row.Inventario}</p>
+                <p class="animate-text">SKU: ${row.SKU}</p>
+            </div>
+            <div class="buy-button-container">
+                <a href="${row["URL"]}" target="_blank"><button class="animate-text">Comprar</button></a>
+            </div>
+        </div>`;
+    });
+
+    setTimeout(() => {
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => {
+            card.classList.add('animated');
+        });
+
+        const textElements = document.querySelectorAll('.animate-text');
+        textElements.forEach((text, index) => {
+            text.style.animationDelay = `${0.3 * index}s`;
+            text.classList.add('text-animated');
+        });
+
+        const lines = document.querySelectorAll('.animate-line');
+        lines.forEach(line => {
+            line.classList.add('line-animated');
+        });
+
+        // Ajustar el ancho de la tarjeta según el ancho del texto .transf
+        cards.forEach(card => {
+            const transfElement = card.querySelector('.transf');
+            if (transfElement) {
+                const transfWidth = transfElement.offsetWidth + 10; // Extra por padding
+                const finalWidth = Math.min(Math.max(transfWidth, 200), 300); // entre 200 y 400px
+                card.style.width = `${finalWidth}px`;
+            }
+        });
+
+    }, 50);
+
+    document.getElementById('pagination').innerHTML = `
+        <button onclick="changePage(-1)" ${page === 1 ? 'disabled' : ''}>⏪ Anterior</button>
+        <span> Página ${page} de ${Math.ceil(data.length / rowsPerPage)} </span>
+        <button onclick="changePage(1)" ${page === Math.ceil(data.length / rowsPerPage) ? 'disabled' : ''}>Siguiente ⏩</button>
+    `;
+
+    history.pushState(null, null, window.location.pathname.replace(/\/page\/\d+\//, "/") + "page/" + page + "/");
+}
+
+function goToItemPage(sku) {
+    const itemIndex = data.findIndex(item => item.SKU === sku);
+    const pageNumber = Math.floor(itemIndex / rowsPerPage) + 1;
+    window.location.href = `${window.location.origin}${window.location.pathname.replace(/\/page\/\d+\//, "")}page/${pageNumber}/#${sku}`;
+}
+
+function changePage(step) {
+    if (currentPage + step > 0 && currentPage + step <= Math.ceil(data.length / rowsPerPage)) {
+        currentPage += step;
+        loadPage(currentPage);
+    }
+}
+
+function getPageFromURL() {
+    const match = window.location.pathname.match(/\/page\/(\d+)\//);
+    return match ? parseInt(match[1]) : 1;
+}
+
+function getSKUFromURL() {
+    const match = window.location.pathname.match(/\/(\d+)\/$/);
+    return match ? match[1] : null;
+}
+
+function getPageForSKU(sku) {
+    const itemIndex = data.findIndex(item => item.SKU === sku);
+    if (itemIndex === -1) return 1;
+    return Math.floor(itemIndex / rowsPerPage) + 1;
+}
+
+fetch('https://opensheet.elk.sh/1hrHS2oz2SDyruHFJCnVo9gzSMGnwZ52tctbnI5W6RhM/Hoja%201')
+    .then(response => response.json())
+    .then(sheetData => {
+        data = sheetData;
+
+        const skuFromURL = getSKUFromURL();
+        if (skuFromURL) {
+            currentPage = getPageForSKU(skuFromURL);
+        } else {
+            currentPage = getPageFromURL();
+        }
+
+        loadPage(currentPage);
+    })
+    .catch(error => console.error('Error:', error));
+</script>
+
 <style>
-    body, html {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        overflow: hidden;
+body {
+}
+
+.card {
+    margin: 30px;
+    background-color: white;
+    border-color: rgb(11, 57, 97);
+    border-style: solid;
+    min-height: auto;
+    display: inline-flex;
+    flex-direction: column;
+    padding: 15px;
+    border-radius: 10px;
+    opacity: 0;
+    transform: translateY(20px);
+    width: auto;
+    max-width: 100%;
+    align-items: center; /* Centra los elementos en el eje horizontal */
+    justify-content: center; /* Centra los elementos en el eje vertical */
+}
+
+.card h2 {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 20px;
+    font-weight: bold;
+    opacity: 0;
+    transform: translateY(20px);
+    color: rgb(15, 76, 129);
+    text-align: left; /* Centra el texto del h2 */
+}
+
+.card h3 {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    font-weight: bold;
+    opacity: 0;
+    transform: translateY(20px);
+    color: rgb(15, 76, 129);
+    margin-bottom: 5px;
+    text-align: center; /* Centra el texto del h3 */
+}
+
+.card p {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+    opacity: 0;
+    transform: translateY(20px);
+    color: rgb(15, 76, 129);
+    margin-top: 0px;
+    margin-bottom: 0px;
+    text-align: center; /* Centra el texto del p */
+}
+
+.card p.transf {
+    font-family: Arial, Helvetica, sans-serif;
+    opacity: 0;
+    transform: translateY(20px);
+    font-size: 16px;
+    color: #FFFFFF;
+    text-align: center; /* Centra el texto del p.transf */
+    border-radius: 5px;
+    padding: 3px;
+    background: #FF0000;
+    display: center;
+    width: auto;
+    white-space: nowrap;
+    margin-bottom: 5px;
+    
+}
+
+.card hr {
+    display: block;
+    border: none;
+    height: 3px;
+    background-color: rgb(11, 57, 97);
+    margin: 0px;
+    opacity: 0;
+    width: 100%; /* Ajusta el ancho de la línea */
+    margin-left: auto;
+    margin-right: auto; /* Centra la línea */
+}
+
+.text-container {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 0px;
+}
+
+.buy-button-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+    width: 100%; /* Asegura que el contenedor ocupe el ancho completo */
+}
+
+.buy-button-container button {
+    background-color: rgb(159, 103, 18);
+    color: white;
+    border: none;
+    padding: 10px 30px;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-align: center; /* Centra el texto del botón */
+}
+.animated {
+    opacity: 1;
+    transform: translateY(0);
+    animation-name: shadow-show;
+    animation-duration: 2s;
+    animation-delay: 0.1s;
+    animation-fill-mode: both;
+}
+
+.text-animated {
+    opacity: 1;
+    transform: translateY(0);
+    animation-name: text-show;
+    animation-duration: 3s;
+    animation-fill-mode: both;
+}
+
+.line-animated {
+    opacity: 1;
+    animation-name: line-show;
+    animation-duration: 2s;
+    animation-fill-mode: both;
+}
+
+@keyframes shadow-show {
+    from {
+        -webkit-box-shadow: 0px 0px 0px 0px rgba(11, 57, 97, 0);
+        box-shadow: 0px 0px 0px 0px rgba(11, 57, 97, 0);
     }
-    .iframe-container {
-        position: relative;
-        width: 100%;
-        height: 100%;
+    to {
+        -webkit-box-shadow: -15px -10px 10px 0px rgba(11, 57, 97, 0.8);
+        box-shadow: -15px -10px 10px 0px rgba(11, 57, 97, 0.8);
     }
-    .iframe-container iframe {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        border: none;
+}
+
+@keyframes text-show {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
     }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes line-show {
+    from { margin: 0px 100px; opacity: 0; }
+    to { margin: 0px; opacity: 1; }
+}
+
+#pagination {
+    text-align: center;
+    margin-top: 20px;
+    display: none;
+}
+
+#pagination button {
+    background: #0073aa;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#pagination button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
 </style>
-</head>
-<body>
-<div class="iframe-container">
-    <iframe src="https://walkinto.in/tour/byzFWuhBwmWkeftZdhrDm/Nuestro_trabajo" title="iframe" frameborder="0" allowvr="yes" allow="vr; xr; accelerometer; magnetometer; gyroscope; autoplay;"></iframe>
-</div>
-</body>
-</html>
