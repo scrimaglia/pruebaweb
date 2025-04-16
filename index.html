@@ -15,7 +15,7 @@ function loadPage(page) {
     container.innerHTML = "";
 
     paginatedItems.forEach(row => {
-        container.innerHTML += `<div class="card">
+        container.innerHTML += `<div class="card" id="${row.SKU}">
             <h2 class="animate-text">${row["Nombre"]}</h2>
             <hr class="animate-line" />
             <div class="text-container">
@@ -48,15 +48,24 @@ function loadPage(page) {
             line.classList.add('line-animated');
         });
 
-        // Ajustar el ancho de la tarjeta según el ancho del texto .transf
         cards.forEach(card => {
             const transfElement = card.querySelector('.transf');
             if (transfElement) {
-                const transfWidth = transfElement.offsetWidth + 10; // Extra por padding
-                const finalWidth = Math.min(Math.max(transfWidth, 200), 300); // entre 200 y 400px
+                const transfWidth = transfElement.offsetWidth + 10;
+                const finalWidth = Math.min(Math.max(transfWidth, 200), 300);
                 card.style.width = `${finalWidth}px`;
             }
         });
+
+        const skuFromURL = getSKUFromURL();
+        if (skuFromURL) {
+            const target = document.getElementById(skuFromURL);
+            if (target) {
+                setTimeout(() => {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            }
+        }
 
     }, 50);
 
@@ -66,13 +75,14 @@ function loadPage(page) {
         <button onclick="changePage(1)" ${page === Math.ceil(data.length / rowsPerPage) ? 'disabled' : ''}>Siguiente ⏩</button>
     `;
 
-    history.pushState(null, null, window.location.pathname.replace(/\/page\/\d+\//, "/") + "page/" + page + "/");
+    history.replaceState(null, null, `#${getSKUFromURL() || ""}`);
 }
 
 function goToItemPage(sku) {
     const itemIndex = data.findIndex(item => item.SKU === sku);
+    if (itemIndex === -1) return;
     const pageNumber = Math.floor(itemIndex / rowsPerPage) + 1;
-    window.location.href = `${window.location.origin}${window.location.pathname.replace(/\/page\/\d+\//, "")}page/${pageNumber}/#${sku}`;
+    window.location.href = `${window.location.origin}/pruebaweb/page/${pageNumber}/#${sku}`;
 }
 
 function changePage(step) {
@@ -88,8 +98,7 @@ function getPageFromURL() {
 }
 
 function getSKUFromURL() {
-    const match = window.location.pathname.match(/\/(\d+)\/$/);
-    return match ? match[1] : null;
+    return window.location.hash ? window.location.hash.substring(1) : null;
 }
 
 function getPageForSKU(sku) {
@@ -133,8 +142,8 @@ body {
     transform: translateY(20px);
     width: auto;
     max-width: 100%;
-    align-items: center; /* Centra los elementos en el eje horizontal */
-    justify-content: center; /* Centra los elementos en el eje vertical */
+    align-items: center;
+    justify-content: center;
 }
 
 .card h2 {
@@ -144,7 +153,7 @@ body {
     opacity: 0;
     transform: translateY(20px);
     color: rgb(15, 76, 129);
-    text-align: left; /* Centra el texto del h2 */
+    text-align: left;
 }
 
 .card h3 {
@@ -155,7 +164,7 @@ body {
     transform: translateY(20px);
     color: rgb(15, 76, 129);
     margin-bottom: 5px;
-    text-align: center; /* Centra el texto del h3 */
+    text-align: center;
 }
 
 .card p {
@@ -166,7 +175,7 @@ body {
     color: rgb(15, 76, 129);
     margin-top: 0px;
     margin-bottom: 0px;
-    text-align: center; /* Centra el texto del p */
+    text-align: center;
 }
 
 .card p.transf {
@@ -175,7 +184,7 @@ body {
     transform: translateY(20px);
     font-size: 16px;
     color: #FFFFFF;
-    text-align: center; /* Centra el texto del p.transf */
+    text-align: center;
     border-radius: 5px;
     padding: 3px;
     background: #FF0000;
@@ -183,7 +192,6 @@ body {
     width: auto;
     white-space: nowrap;
     margin-bottom: 5px;
-    
 }
 
 .card hr {
@@ -193,9 +201,9 @@ body {
     background-color: rgb(11, 57, 97);
     margin: 0px;
     opacity: 0;
-    width: 100%; /* Ajusta el ancho de la línea */
+    width: 100%;
     margin-left: auto;
-    margin-right: auto; /* Centra la línea */
+    margin-right: auto;
 }
 
 .text-container {
@@ -210,7 +218,7 @@ body {
     display: flex;
     justify-content: center;
     margin-top: 15px;
-    width: 100%; /* Asegura que el contenedor ocupe el ancho completo */
+    width: 100%;
 }
 
 .buy-button-container button {
@@ -220,8 +228,9 @@ body {
     padding: 10px 30px;
     text-transform: uppercase;
     cursor: pointer;
-    text-align: center; /* Centra el texto del botón */
+    text-align: center;
 }
+
 .animated {
     opacity: 1;
     transform: translateY(0);
@@ -248,11 +257,9 @@ body {
 
 @keyframes shadow-show {
     from {
-        -webkit-box-shadow: 0px 0px 0px 0px rgba(11, 57, 97, 0);
         box-shadow: 0px 0px 0px 0px rgba(11, 57, 97, 0);
     }
     to {
-        -webkit-box-shadow: -15px -10px 10px 0px rgba(11, 57, 97, 0.8);
         box-shadow: -15px -10px 10px 0px rgba(11, 57, 97, 0.8);
     }
 }
@@ -269,14 +276,20 @@ body {
 }
 
 @keyframes line-show {
-    from { margin: 0px 100px; opacity: 0; }
-    to { margin: 0px; opacity: 1; }
+    from {
+        margin: 0px 100px;
+        opacity: 0;
+    }
+    to {
+        margin: 0px;
+        opacity: 1;
+    }
 }
 
 #pagination {
     text-align: center;
     margin-top: 20px;
-    display: none;
+    display: block;
 }
 
 #pagination button {
